@@ -1,148 +1,110 @@
-
-var Twitter = require('twitter');
-var config = require('./config.js');
+var Twitter = require("twitter");
+var config = require("./config.js"); // Consists of API credentials
 var T = new Twitter(config);
-const fs = require("fs")
+const fs = require("fs");
 
-let timerId = setInterval(() =>{
-
-
-
-temp = []
-
-
-// Set up your search parameters
-var params = {
-  q: '#nodejs',
-  //cursor: 'MTM5MTA4MzYwODExOTU5OTEwOA'
-  screen_name: 'BreatheIndia21',
-  count: '200'
-  
-}
-
-var timeStamp;
-var timeF;
-fs.readFile("time.json", 'utf8', function(err, data) {
-  if (err) throw err;
-  //console.log('OK: ' + "time.txt");
-  tempV = JSON.parse(data);
-  timeF = tempV;
-
-  //console.log(tempV.timestamp)
-  timeStamp = tempV.timestamp;
-});
-var x = 0;
-// Initiate your search using the above paramaters
-//console.log(timeStamp)
-T.get('statuses/mentions_timeline', params, function(err, data) {
-  if(parseInt(timeStamp) === 0){
-    var len = data.length
-  timeStamp = new Date(data[len-1].created_at);
-  
-  }
-
- console.log(data);
-  
-for(i = 0 ; i < data.length ; i++){
-  
-if(data[i].user.screen_name !== 'BreatheIndia21'){
-  console.log("nostuck")
-  if(new Date(timeStamp) >= new Date(data[i].created_at)) {
-    break;
-  }
-  console.log("created reps");
-
-    params2 = {
-        status:  "@"+data[i].user.screen_name +' Thank you for creating a ticket Please make sure to type your Name, Number, Supplies and the address it needs to be delivered to',
-        in_reply_to_status_id: data[i].id_str,
+/**
+ * This function is responsible for reading the time.json file to see the last time the mentions were scraped from the API
+ * Assigns both the current time stamp and timeJSON
+ */
+function readTimeStamp() {
+  fs.readFile("time.json", "utf8", function (err, data) {
+    if (err) {
+      throw err;
     }
-    
-    T.post('statuses/update', params2,function(err,data){
-      if(err){
-        return
+    timeJson = JSON.parse(data);
+    timeStamp = timeJson.timestamp;
+  });
+}
+
+/**
+ * This function collects all the relvant new request for Covid Supplies by checking whether the mention has "request"
+ * @param {Object} data : Holds all the data to the tweets that come from the mentions API call
+ * @param {Array} tempRequests : Used to process all the valid tweets that have "request"
+ * @param {int} timeStamp: Used to check the time stamp of the tweets from data
+ */
+function collectRequests(data, tempRequests, timeStamp) {
+  for (i = 0; i < data.length; i++) {
+    if (data[i].user.screen_name !== "BreatheIndia21") {
+      console.log("nostuck");
+      if (new Date(timeStamp) >= new Date(data[i].created_at)) {
+        break;
       }
-      else{
-      console.log("tweet reply sent!")
+      console.log("created reps");
+      if (data[i].text.toLowerCase().includes("request")) {
+        tempRequests.push(data[i].text);
       }
-    })
-   if (data[i].text.toLowerCase().includes("request")){
-    temp.push(data[i].text);
-
-   }
-
-}
-else{
-  continue;
-}
-}
-
-
-
-
-processed = []
-for(i = 0 ; i < temp.length ; i++){
-  tempVal = ""
-  console.log("splitting");
-  kemp = temp[i].split(" ");
-
- for(j = 0 ; j < kemp.length; j++){
-   if (kemp[j].includes("@") || kemp[j].includes("http")){
-     continue
-   }
-   else{
-     if(kemp[j].toLowerCase().includes("request")){
-       console.log("here");
-      kemp[j] =  kemp[j].replace('request',' ');
-     }
-     tempVal = tempVal + " " + kemp[j].trim();
-   }
- }
- console.log(tempVal);
- processed.push(tempVal);
-
-}
-//console.log(data[0]);
-if (typeof data[0] !== 'undefined'){
-console.log("reached Here");
-timeStamp  = new Date(data[0].created_at);
-timeF.timestamp = timeStamp;
-}
-fs.writeFileSync("time.json", JSON.stringify(timeF));
-
-
-for(i = 0; i < processed.length ; i++){
-if(typeof processed[i+1] == "undefined"){
-  params = {
-    status: "NEW REQUESTS FOR SUPPLIES " + "\n" + '\n' + processed[i] + "\n" + "\n"
+    }
   }
 }
-  else{
+/**
+ * This functions takes all valid requests and scrapes the mentions, spaces and extra characters that occur within a Tweet
+ * @param {Array} tempRequests : Holds all the current requests which are unprocessed
+ * @param {Array} processed : Array to insert all processed requests into
+ */
+function processRequests(tempRequests, processed) {
+  for (i = 0; i < tempRequests.length; i++) {
+    currRequest = ""; // processed text
+    requestArr = tempRequests[i].split(" ");
+    for (j = 0; j < requestArr.length; j++) {
+      if (requestArr[j].includes("@") || requestArr[j].includes("http")) {
+        continue;
+      } else {
+        if (requestArr[j].toLowerCase().includes("request")) {
+          requestArr[j] = requestArr[j].replace("request", " ");
+        }
+        currRequest = currRequest + " " + requestArr[j].trim();
+      }
+    }
+    processed.push(currRequest);
+  }
+}
+/**
+ * This functions Tweets out the information for all requests of people that need supplies due to Covid using the API to tweet
+ * @param {Array} processed : Holds all the processed request data needed
+ */
+function createTweet(processed) {
+  for (i = 0; i < processed.length; i++) {
     params = {
-      status: "NEW REQUESTS FOR SUPPLIES " + "\n" + '\n' + processed[i] + "\n" + "\n" + processed[i+1]
-    }  
+      status: "NEW REQUESTS FOR SUPPLIES " + "\n" + "\n" + processed[i] + " ",
+    };
+    T.post("statuses/update", params, function (err, data) {
+      console.log("Ticket created");
+    });
   }
-  i = i + 1;
-  T.post('statuses/update',params,function(err,data){
-    console.log("Ticket created");
-  })
 }
-//}
-
-
-
-
-
-
-//console.log(processed[0]);
-});
-
-
-
-// params2 = {
-//   screen_name: "KnightOfVictory"
-// }
-// T.get("users/lookup",params2, function(err,data){
-//   console.log(data);
-// })
+var timeStamp;
+var timeJson;
+/**
+ * MAIN METHOD: Processes mentions checks for requests and tweets on bot account
+ */
+let timerId = setInterval(() => {
+  tempRequests = [];
+  var params = {
+    q: "#nodejs",
+    screen_name: "BreatheIndia21",
+    count: "200",
+  };
+  readTimeStamp();
+  /**
+   * This consists of API to retrive all mentioned tweets and call methods that will process those tweets
+   */
+  T.get("statuses/mentions_timeline", params, function (err, data) {
+    if (parseInt(timeStamp) === 0) {
+      var len = data.length;
+      timeStamp = new Date(data[len - 1].created_at);
+    }
+    collectRequests(data, tempRequests, timeStamp);
+    processed = [];
+    processRequests(tempRequests, processed);
+    // Check if API calls have run out (Twitter has a limit to its calls)
+    if (typeof data[0] !== "undefined") {
+      console.log("reached Here");
+      timeStamp = new Date(data[0].created_at);
+      timeJson.timestamp = timeStamp;
+    }
+    // Update time file and create Tweets
+    fs.writeFileSync("time.json", JSON.stringify(timeJson));
+    createTweet(processed);
+  });
 }, 60000);
-//fix
