@@ -26,7 +26,6 @@ function readTimeStamp() {
 function collectRequests(data, tempRequests, timeStamp) {
   for (i = 0; i < data.length; i++) {
     if (data[i].user.screen_name !== "BreatheIndia21") {
-      console.log("nostuck");
       if (new Date(timeStamp) >= new Date(data[i].created_at)) {
         break;
       }
@@ -99,7 +98,6 @@ let timerId = setInterval(() => {
     processRequests(tempRequests, processed);
     // Check if API calls have run out (Twitter has a limit to its calls)
     if (typeof data[0] !== "undefined") {
-      console.log("reached Here");
       timeStamp = new Date(data[0].created_at);
       timeJson.timestamp = timeStamp;
     }
