@@ -1,5 +1,6 @@
 # Breathe-India-Project
 This Project is a bot meant to amplify the request for supplies on Twitter that are needed all over India due to COVID-19 using the Twitter Developer API.
+Please click the following link to see the bot account: https://twitter.com/BreatheIndia21
 
 ## Description
 THe project works with mentions. When a user tags the bot with the word 'request' and adds their details on the tweet the bot takes those deatils and information and tweets it out on its own. This ensures an amplification of supply requests and also holds a central account for people to refer to if they want to give those supplies 
@@ -26,5 +27,6 @@ Need supply x supply y and supply z. Location: myLocation. Contact: Mynumber
 
 ## Authors
 
-Fardeen Meeran @Meerxn
+* Fardeen Meeran @Meerxn
+* Check the Bot on Twitter: @BreatheIndia21
 
